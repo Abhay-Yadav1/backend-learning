@@ -136,3 +136,86 @@ Content-Type: application/json
   "message": "Invalid email or password"
 }
 ```
+
+## Get user profile
+
+Returns the currently authenticated user's profile.
+
+**Endpoint:** `GET /users/profile`
+
+### Authentication
+
+Send the JWT in either of the following ways:
+
+```http
+Authorization: Bearer <jwt-token>
+```
+
+or use the `token` cookie returned by the login endpoint.
+
+### Example request
+
+```http
+GET /users/profile
+Authorization: Bearer <jwt-token>
+```
+
+### Status codes
+
+| Status | Meaning | Response |
+| --- | --- | --- |
+| `200 OK` | The token is valid and belongs to a user. | Returns the authenticated user's profile. |
+| `401 Unauthorized` | The token is missing, invalid, expired, or blacklisted. | Returns an unauthorized message. |
+
+### Success response (`200 OK`)
+
+```json
+{
+  "_id": "<user-id>",
+  "fullname": {
+    "firstname": "Aarav",
+    "lastname": "Sharma"
+  },
+  "email": "aarav@example.com"
+}
+```
+
+### Unauthorized response (`401 Unauthorized`)
+
+```json
+{
+  "message": "Unauthorized"
+}
+```
+
+## Log out a user
+
+Logs out the authenticated user by clearing the `token` cookie and adding the JWT to the token blacklist. Blacklisted tokens expire after 24 hours.
+
+**Endpoint:** `GET /users/logout`
+
+### Authentication
+
+This endpoint requires the same authentication as the profile route: send `Authorization: Bearer <jwt-token>` or include the `token` cookie.
+
+### Example request
+
+```http
+GET /users/logout
+Authorization: Bearer <jwt-token>
+```
+
+### Status codes
+
+| Status | Meaning | Response |
+| --- | --- | --- |
+| `200 OK` | The token was blacklisted and the cookie was cleared. | Returns a logout confirmation. |
+| `401 Unauthorized` | The token is missing, invalid, expired, or blacklisted. | Returns an unauthorized message. |
+
+### Success response (`200 OK`)
+
+```json
+{
+  "message": "Logged out"
+}
+```
