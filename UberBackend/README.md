@@ -302,3 +302,97 @@ Content-Type: application/json
   "message": "Captain already exist"
 }
 ```
+
+## Log in a captain
+
+Authenticates a registered captain and returns an authentication token.
+
+**Endpoint:** `POST /captains/login`
+
+### Required request format
+
+Send the request body as JSON with the `Content-Type: application/json` header.
+
+| Field | Required | Rules |
+| --- | --- | --- |
+| `email` | Yes | Must be a valid email address. |
+| `password` | Yes | Must be at least 6 characters long. |
+
+### Example request
+
+```json
+{
+  "email": "aarav.captain@example.com",
+  "password": "securepassword"
+}
+```
+
+### Status codes
+
+| Status | Meaning |
+| --- | --- |
+| `200 OK` | The email and password are valid; returns `token` and `captain`. |
+| `400 Bad Request` | The request fails email or password validation. |
+| `401 Unauthorized` | The email does not exist or the password is incorrect. |
+
+### Invalid-credentials response (`401 Unauthorized`)
+
+```json
+{
+  "message": "Invalid email or password"
+}
+```
+
+## Get captain profile
+
+Returns the authenticated captain's profile.
+
+**Endpoint:** `GET /captains/profile`
+
+### Authentication
+
+Send the JWT as `Authorization: Bearer <jwt-token>` or include the `token` cookie created during captain login.
+
+### Status codes
+
+| Status | Meaning |
+| --- | --- |
+| `200 OK` | Returns the authenticated captain in the `captain` property. |
+| `401 Unauthorized` | The token is missing, invalid, expired, or blacklisted. |
+
+### Success response (`200 OK`)
+
+```json
+{
+  "captain": {
+    "_id": "<captain-id>",
+    "email": "aarav.captain@example.com",
+    "status": "inactive"
+  }
+}
+```
+
+## Log out a captain
+
+Clears the `token` cookie and blacklists the JWT for 24 hours.
+
+**Endpoint:** `GET /captains/logout`
+
+### Authentication
+
+Send the JWT as `Authorization: Bearer <jwt-token>` or include the `token` cookie.
+
+### Status codes
+
+| Status | Meaning |
+| --- | --- |
+| `200 OK` | The captain was logged out successfully. |
+| `401 Unauthorized` | The token is missing, invalid, expired, or blacklisted. |
+
+### Success response (`200 OK`)
+
+```json
+{
+  "message": "Logged out"
+}
+```
