@@ -219,3 +219,86 @@ Authorization: Bearer <jwt-token>
   "message": "Logged out"
 }
 ```
+
+## Register a captain
+
+Creates a captain account with vehicle information and returns an authentication token.
+
+**Endpoint:** `POST /captains/register`
+
+### Required request format
+
+Send the request body as JSON with the `Content-Type: application/json` header.
+
+| Field | Required | Rules |
+| --- | --- | --- |
+| `fullname.firstname` | Yes | Must be at least 3 characters long. |
+| `fullname.lastname` | No | If provided, must be at least 3 characters long. |
+| `email` | Yes | Must be a valid email address. |
+| `password` | Yes | Must be at least 6 characters long. |
+| `vehicle.color` | Yes | Must be at least 3 characters long. |
+| `vehicle.plate` | Yes | Must be at least 3 characters long. |
+| `vehicle.capacity` | Yes | Must be an integer of at least `1`. |
+| `vehicle.vehicleType` | Yes | Must be one of: `car`, `auto`, or `motorcycle`. |
+
+### Example request
+
+```http
+POST /captains/register
+Content-Type: application/json
+```
+
+```json
+{
+  "fullname": {
+    "firstname": "Aarav",
+    "lastname": "Sharma"
+  },
+  "email": "aarav.captain@example.com",
+  "password": "securepassword",
+  "vehicle": {
+    "color": "Black",
+    "plate": "DL01AB1234",
+    "capacity": 4,
+    "vehicleType": "car"
+  }
+}
+```
+
+### Status codes
+
+| Status | Meaning | Response |
+| --- | --- | --- |
+| `201 Created` | The captain was created successfully. | Returns a JWT `token` and the created `captain` object. |
+| `400 Bad Request` | Request validation failed, or a captain is already registered with that email. | Returns validation `errors` or a duplicate-email message. |
+
+### Success response (`201 Created`)
+
+```json
+{
+  "token": "<jwt-token>",
+  "captain": {
+    "_id": "<captain-id>",
+    "fullname": {
+      "firstname": "Aarav",
+      "lastname": "Sharma"
+    },
+    "email": "aarav.captain@example.com",
+    "status": "inactive",
+    "vehicle": {
+      "color": "Black",
+      "plate": "DL01AB1234",
+      "capacity": 4,
+      "vehicleType": "car"
+    }
+  }
+}
+```
+
+### Duplicate-email response (`400 Bad Request`)
+
+```json
+{
+  "message": "Captain already exist"
+}
+```
