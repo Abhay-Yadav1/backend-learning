@@ -1,5 +1,43 @@
 # Uber Backend API
 
+## Setup
+
+Install dependencies, create an `.env` file, and start the server:
+
+```bash
+npm install
+node Server.js
+```
+
+The server listens on port `3000` by default. Set `PORT` to use a different
+port.
+
+| Environment variable | Purpose |
+| --- | --- |
+| `MONGODB_URI` | MongoDB connection string. |
+| `JWT_SECRET` | Secret used to sign user and captain JWTs. |
+| `GOOGLE_MAPS_API` | Google Maps API key used by the internal map helpers. |
+| `PORT` | Optional HTTP port; defaults to `3000`. |
+
+The Google Maps key must be enabled for the Geocoding, Distance Matrix, and
+Places Autocomplete APIs. Keep `.env` out of source control.
+
+## API overview
+
+| Method | Endpoint | Authentication | Description |
+| --- | --- | --- | --- |
+| `POST` | `/users/register` | No | Create a user account. |
+| `POST` | `/users/login` | No | Authenticate a user. |
+| `GET` | `/users/profile` | User token | Get the authenticated user's profile. |
+| `GET` | `/users/logout` | User token | Log out the authenticated user. |
+| `POST` | `/captains/register` | No | Create a captain account. |
+| `POST` | `/captains/login` | No | Authenticate a captain. |
+| `GET` | `/captains/profile` | Captain token | Get the authenticated captain's profile. |
+| `GET` | `/captains/logout` | Captain token | Log out the authenticated captain. |
+
+Map operations are not exposed as HTTP endpoints yet; they are internal helpers
+described in [Map service](#map-service).
+
 ## Register a user
 
 Creates a new user account and returns an authentication token.
@@ -396,3 +434,29 @@ Send the JWT as `Authorization: Bearer <jwt-token>` or include the `token` cooki
   "message": "Logged out"
 }
 ```
+
+## Map service
+
+`Services/maps.service.js` provides helpers for use by other backend modules.
+They are not registered as Express routes, so clients cannot call them directly.
+All helpers that contact Google Maps require `GOOGLE_MAPS_API`.
+
+| Helper | Arguments | Returns | Failure behavior |
+| --- | --- | --- | --- |
+| `getAddressCoordinate` | `address` | `{ ltd, lng }` latitude/longitude values for the first geocoding result. | Throws when Google cannot return coordinates. |
+| `getDistanceTime` | `origin`, `destination` | The first Google Distance Matrix element, including `distance` and `duration` when available. | Throws if either argument is absent, no route is found, or Google returns an error. |
+| `getAutoCompleteSuggestions` | `input` | An array of place-description strings. | Throws if `input` is absent or Google returns an error. |
+| `getCaptainsInTheRadius` | `ltd`, `lng`, `radius` | Captains matched by a MongoDB geospatial-radius query. | Propagates database errors. `radius` is in kilometres. |
+
+Example usage from an internal service:
+
+```js
+const mapsService = require('./Services/maps.service');
+
+const coordinates = await mapsService.getAddressCoordinate('India Gate, Delhi');
+const route = await mapsService.getDistanceTime('India Gate, Delhi', 'Connaught Place, Delhi');
+const suggestions = await mapsService.getAutoCompleteSuggestions('Indira Gandhi International Airport');
+```
+
+> `getAddressCoordinate` currently returns the latitude under the property name
+> `ltd`. Consumers should use that spelling until the implementation is changed.
