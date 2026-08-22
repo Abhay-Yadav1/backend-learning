@@ -35,8 +35,10 @@ Places Autocomplete APIs. Keep `.env` out of source control.
 | `GET` | `/captains/profile` | Captain token | Get the authenticated captain's profile. |
 | `GET` | `/captains/logout` | Captain token | Log out the authenticated captain. |
 
-Map operations are not exposed as HTTP endpoints yet; they are internal helpers
-described in [Map service](#map-service).
+Map HTTP handlers exist in `controllers/map.controller.js`, but no map router is
+currently registered in `app.js`. Consequently, map operations are not yet
+public API endpoints. See [Map controller](#map-controller) and
+[Map service](#map-service).
 
 ## Register a user
 
@@ -434,6 +436,21 @@ Send the JWT as `Authorization: Bearer <jwt-token>` or include the `token` cooki
   "message": "Logged out"
 }
 ```
+
+## Map controller
+
+`controllers/map.controller.js` contains handlers intended for map routes. A
+router must be created and mounted in `app.js` before clients can call them.
+
+| Handler | Query parameters | Success response | Validation failure | Service failure |
+| --- | --- | --- | --- | --- |
+| `getCoordinates` | `address` | `200 OK` with the coordinate object. | `400 Bad Request` with an `errors` array. | `404 Not Found` with `{ "message": "Coordinates not found" }`. |
+| `getDistanceTime` | `origin`, `destination` | `200 OK` with the Google Distance Matrix element. | `400 Bad Request` with an `errors` array. | `500 Internal Server Error`. |
+| `getAutoCompleteSuggestions` | `input` | `200 OK` with an array of place-description strings. | `400 Bad Request` with an `errors` array. | `500 Internal Server Error`. |
+
+The controller relies on route-level `express-validator` rules. Those rules are
+not defined until a map router is added, so the expected required query
+parameters should be validated there.
 
 ## Map service
 
