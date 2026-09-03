@@ -35,9 +35,13 @@ Places Autocomplete APIs. Keep `.env` out of source control.
 | `GET` | `/captains/profile` | Captain token | Get the authenticated captain's profile. |
 | `GET` | `/captains/logout` | Captain token | Log out the authenticated captain. |
 
-Map HTTP handlers exist in `controllers/map.controller.js`, but no map router is
-currently registered in `app.js`. Consequently, map operations are not yet
-public API endpoints. See [Map controller](#map-controller) and
+Ride routes are defined in `routes/ride.routes.js`, but the router is not yet
+registered in `app.js`. Until `app.use('/rides', rideRoutes)` is added, the ride
+endpoints documented below are unavailable and will return `404 Not Found`.
+
+Map HTTP handlers also exist in `controllers/map.controller.js`, but no map
+router is currently registered in `app.js`. Consequently, map operations are
+not yet public API endpoints. See [Map controller](#map-controller) and
 [Map service](#map-service).
 
 ## Register a user
@@ -434,6 +438,83 @@ Send the JWT as `Authorization: Bearer <jwt-token>` or include the `token` cooki
 ```json
 {
   "message": "Logged out"
+}
+```
+
+## Ride routes
+
+> These routes become public only after the ride router is mounted at `/rides`.
+> They require `GOOGLE_MAPS_API`, because fare calculation and captain matching
+> use the map service.
+
+| Method | Endpoint | Authentication | Request fields | Description |
+| --- | --- | --- | --- | --- |
+| `POST` | `/rides/create` | User token | `pickup`, `destination`, `vehicleType` | Creates a pending ride and notifies nearby captains by socket event. |
+| `GET` | `/rides/get-fare` | User token | Query: `pickup`, `destination` | Returns fare estimates for every vehicle type. |
+| `POST` | `/rides/confirm` | Captain token | `rideId` | Marks a ride as accepted by the captain. |
+| `GET` | `/rides/start-ride` | Captain token | Query: `rideId`, `otp` | Validates the OTP and marks an accepted ride as ongoing. |
+| `POST` | `/rides/end-ride` | Captain token | `rideId` | Marks the captain's ongoing ride as completed. |
+
+Authentication accepts `Authorization: Bearer <jwt-token>` or the `token`
+cookie produced by the login endpoints.
+
+### Create a ride
+
+**Endpoint:** `POST /rides/create`
+
+| Field | Rules |
+| --- | --- |
+| `pickup` | String, at least 3 characters. |
+| `destination` | String, at least 3 characters. |
+| `vehicleType` | One of `auto`, `car`, or `moto`. |
+
+```json
+{
+  "pickup": "India Gate, Delhi",
+  "destination": "Connaught Place, Delhi",
+  "vehicleType": "car"
+}
+```
+
+Returns `201 Created` with the new ride. The ride begins with `status` set to
+`pending`; its OTP is not returned in this response.
+
+### Get fare estimates
+
+**Endpoint:** `GET /rides/get-fare?pickup=India%20Gate%2C%20Delhi&destination=Connaught%20Place%2C%20Delhi`
+
+Returns `200 OK` with estimates for all supported ride types:
+
+```json
+{
+  "auto": 80,
+  "car": 125,
+  "moto": 60
+}
+```
+
+The values vary with the route distance and duration.
+
+### Captain ride lifecycle
+
+Captains progress a ride through these states:
+
+```text
+pending --POST /rides/confirm--> accepted
+accepted --GET /rides/start-ride (valid OTP)--> ongoing
+ongoing --POST /rides/end-ride--> completed
+```
+
+`rideId` must be a valid MongoDB ObjectId. The start endpoint additionally
+requires a six-character `otp`. Validation failures return `400 Bad Request`;
+service or map failures currently return `500 Internal Server Error` with a
+`message` property.
+
+Example confirmation request:
+
+```json
+{
+  "rideId": "<ride-id>"
 }
 ```
 
