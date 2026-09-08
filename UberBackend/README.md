@@ -1,8 +1,36 @@
 # Uber Backend API
 
+Express and MongoDB backend for the Uber-style ride booking application. It
+provides separate authentication flows for passengers and captains, JWT-based
+authorization, cookie support, and the ride/map services used by the frontend.
+
+## Features
+
+- Passenger registration, login, profile, and logout.
+- Captain registration with vehicle details, login, profile, and logout.
+- Password hashing with `bcrypt` and JWT authentication.
+- MongoDB persistence through Mongoose.
+- Validation with `express-validator`.
+- Fare and ride lifecycle handlers are implemented and documented below.
+
+## Project structure
+
+```text
+UberBackend/
+├── controllers/       Request handlers for users, captains, maps, and rides
+├── db/                MongoDB connection
+├── middlewares/       Authentication middleware
+├── models/            Mongoose models
+├── routes/            Express route definitions
+├── Services/          Fare, map, ride, and user service logic
+├── app.js             Express app configuration
+└── Server.js          HTTP server entry point
+```
+
 ## Setup
 
-Install dependencies, create an `.env` file, and start the server:
+From this directory, install dependencies, create an `.env` file, and start the
+server:
 
 ```bash
 npm install
@@ -10,7 +38,16 @@ node Server.js
 ```
 
 The server listens on port `3000` by default. Set `PORT` to use a different
-port.
+port. A successful start also requires a reachable MongoDB instance because the
+application connects to the database during startup.
+
+The root endpoint can be used as a basic smoke check:
+
+```bash
+curl http://localhost:3000/
+```
+
+It returns `Hello` when the HTTP server is reachable.
 
 | Environment variable | Purpose |
 | --- | --- |
@@ -21,6 +58,12 @@ port.
 
 The Google Maps key must be enabled for the Geocoding, Distance Matrix, and
 Places Autocomplete APIs. Keep `.env` out of source control.
+
+## Available scripts
+
+There is currently no automated test suite configured. The `test` script in
+`package.json` exits with an error placeholder, so use `node Server.js` for
+local development until tests are added.
 
 ## API overview
 
